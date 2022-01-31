@@ -1,4 +1,4 @@
-package main
+package fanotify
 
 import (
 	"bufio"
@@ -119,7 +119,4 @@ func FanotifyPoll(fd int, stopFirst bool, callback func(data interface{})) error
 			}
 		}
 	}
-}
-
-func main() {
 }
