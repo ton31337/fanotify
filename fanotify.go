@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -81,9 +80,7 @@ func FanotifyRead(fd int) (*FanotifyMetadata, error) {
 }
 
 func FanotifyPoll(fd int, stopFirst bool, callback func(data interface{})) error {
-	ticker := time.NewTicker(1 * time.Second)
-
-	for range ticker.C {
+	for {
 		pfd := []unix.PollFd{
 			{
 				Fd:     0,
@@ -122,6 +119,4 @@ func FanotifyPoll(fd int, stopFirst bool, callback func(data interface{})) error
 			}
 		}
 	}
-
-	return nil
 }
