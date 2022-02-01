@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func FanotifyCallBack(data interface{}) {
+func FanotifyCallBack(data string) {
 	// dummy callback function
 	fmt.Printf("Data: %s\n", data)
 }

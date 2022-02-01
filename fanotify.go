@@ -32,6 +32,10 @@ type FanotifyMetadata struct {
 	EventMetadata FanotifyEventMetadata
 }
 
+type FanotifyEvent struct {
+	Body interface{}
+}
+
 func (fem *FanotifyEventMetadata) GetPath() (string, error) {
 	path, err := os.Readlink(
 		filepath.Join(
@@ -39,6 +43,7 @@ func (fem *FanotifyEventMetadata) GetPath() (string, error) {
 			strconv.FormatUint(uint64(fem.Fd), 10),
 		),
 	)
+	defer unix.Close(int(fem.Fd))
 
 	if err != nil {
 		return "", err
@@ -79,29 +84,26 @@ func FanotifyRead(fd int) (*FanotifyMetadata, error) {
 	}, nil
 }
 
-func FanotifyPoll(fd int, stopFirst bool, callback func(data interface{})) error {
+func FanotifyPoll(fd int, stopFirst bool, callback func(data string)) error {
+	pfd := []unix.PollFd{
+		{
+			Fd:     int32(fd),
+			Events: unix.POLLIN,
+		},
+	}
+
 	for {
-		pfd := []unix.PollFd{
-			{
-				Fd:     0,
-				Events: unix.POLLIN,
-			},
-			{
-				Fd:     int32(fd),
-				Events: unix.POLLIN,
-			},
+		pollNum, err := unix.Poll(pfd, -1)
+		if pollNum < 1 || err != nil {
+			continue
 		}
 
-		_, err := unix.Poll(pfd, -1)
-		if err != nil {
-			return err
-		}
-
-		if pfd[1].Revents == unix.POLLIN {
+		if pfd[0].Revents == unix.POLLIN {
 			fm, err := FanotifyRead(fd)
 			if err != nil {
 				return err
 			}
+			defer fm.File.Close()
 
 			path, err := fm.EventMetadata.GetPath()
 			if err != nil {
